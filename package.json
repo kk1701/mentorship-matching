@@ -1,0 +1,11 @@
+{
+  "name": "mentorship-matching",
+  "version": "1.0.0",
+  "description": "Mentorship Matching Platform",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Karan Kute",
+  "license": "ISC"
+}
