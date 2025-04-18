@@ -272,13 +272,15 @@ textarea {
 }
 
 .profile-card-name {
+    color: var(--light-color);
+    font-size: x-large;
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
 
 .profile-card-role {
     font-size: 0.875rem;
-    color: #6c757d;
+    color: var(--light-color);
     margin-bottom: 0.5rem;
 }
 
