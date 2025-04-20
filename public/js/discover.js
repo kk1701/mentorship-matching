@@ -79,7 +79,7 @@ function loadDiscoveryResults(filters = {}) {
                 
                 <div class="profile-card-actions">
                     ${connectionStatus === 'connected' ? `
-                        <button class="btn btn-secondary" disabled>Connected</button>
+                        <button class="btn-secondary" disabled>Connected</button>
                     ` : connectionStatus === 'requested' ? `
                         <button class="btn btn-secondary" disabled>Request Sent</button>
                     ` : connectionStatus === 'pending' ? `
@@ -190,95 +190,11 @@ function sendConnectionRequest(targetUserId) {
     loadDiscoveryResults(); // Refresh results
 }
 
-function acceptConnectionRequest(requestUserId) {
-    const currentUserIndex = usersDB.findIndex(u => u.id === currentUser.id);
-    const targetUserIndex = usersDB.findIndex(u => u.id === requestUserId);
+
+// function acceptConnectionRequest(requestUserId) {
     
-    if (currentUserIndex === -1 || targetUserIndex === -1) return;
+// }
 
-    // Find the specific request in current user's receivedRequests
-    const requestIndex = usersDB[currentUserIndex].receivedRequests.findIndex(
-        req => req.userId === requestUserId
-    );
-    
-    if (requestIndex === -1) return;
+// function declineConnectionRequest(requestUserId) {
 
-    const request = usersDB[currentUserIndex].receivedRequests[requestIndex];
-
-    // Find the corresponding sent request in the sender's sentRequests
-    const sentRequestIndex = usersDB[targetUserIndex].sentRequests.findIndex(
-        req => req.requestId === request.requestId
-    );
-
-    if (sentRequestIndex === -1) return;
-
-    // Create connection objects for both users
-    const currentUserConnection = {
-        userId: requestUserId,
-        userName: usersDB[targetUserIndex].name,
-        connectedSince: new Date().toISOString(),
-        role: usersDB[targetUserIndex].role  // Store role for display purposes
-    };
-
-    const targetUserConnection = {
-        userId: currentUser.id,
-        userName: currentUser.name,
-        connectedSince: new Date().toISOString(),
-        role: currentUser.role  // Store role for display purposes
-    };
-
-    // Add to connections list for both users
-    usersDB[currentUserIndex].connections.push(currentUserConnection);
-    usersDB[targetUserIndex].connections.push(targetUserConnection);
-
-    // Remove from requests lists
-    usersDB[currentUserIndex].receivedRequests.splice(requestIndex, 1);
-    usersDB[targetUserIndex].sentRequests.splice(sentRequestIndex, 1);
-
-    // Update in database
-    localStorage.setItem('mentorshipUsers', JSON.stringify(usersDB));
-    
-    // Update current user in session
-    currentUser = usersDB[currentUserIndex];
-    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-    // Refresh the discovery results
-    loadDiscoveryResults();
-}
-
-function declineConnectionRequest(requestUserId) {
-    const currentUserIndex = usersDB.findIndex(u => u.id === currentUser.id);
-    const targetUserIndex = usersDB.findIndex(u => u.id === requestUserId);
-    
-    if (currentUserIndex === -1 || targetUserIndex === -1) return;
-
-    // Find the specific request in current user's receivedRequests
-    const requestIndex = usersDB[currentUserIndex].receivedRequests.findIndex(
-        req => req.userId === requestUserId
-    );
-    
-    if (requestIndex === -1) return;
-
-    const request = usersDB[currentUserIndex].receivedRequests[requestIndex];
-
-    // Find the corresponding sent request in the sender's sentRequests
-    const sentRequestIndex = usersDB[targetUserIndex].sentRequests.findIndex(
-        req => req.requestId === request.requestId
-    );
-
-    if (sentRequestIndex === -1) return;
-
-    // Remove from requests lists
-    usersDB[currentUserIndex].receivedRequests.splice(requestIndex, 1);
-    usersDB[targetUserIndex].sentRequests.splice(sentRequestIndex, 1);
-
-    // Update in database
-    localStorage.setItem('mentorshipUsers', JSON.stringify(usersDB));
-    
-    // Update current user in session
-    currentUser = usersDB[currentUserIndex];
-    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-    // Refresh the discovery results
-    loadDiscoveryResults();
-}
+// }
