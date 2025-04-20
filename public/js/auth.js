@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check if user is already logged in
     if (localStorage.getItem('token') && !['index.html', 'register.html'].includes(window.location.pathname.split('/').pop())) {
         // User is logged in and not on auth pages - redirect to dashboard
-        window.location.href = '/dashboard.html';
+        // window.location.href = '/dashboard.html';
     }
 
     // Setup event listeners
@@ -33,7 +33,6 @@ async function handleLogin(e) {
     e.preventDefault();
     
     const email = document.getElementById('email').value;
-    console.log(email);
     const password = document.getElementById('password').value;
     const errorElement = document.getElementById('loginError');
 

@@ -193,6 +193,12 @@ textarea {
     box-shadow: var(--box-shadow);
 }
 
+#userRole {
+    text-transform: capitalize;
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
 /* Profile Page */
 .profile-section {
     background-color: white;

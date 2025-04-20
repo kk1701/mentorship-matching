@@ -3,7 +3,7 @@ import bodyParser from 'body-parser'
 
 import db from './config/db.js'
 import authRoutes from './routes/auth.js'
-// import profileRoutes from './routes/profile.js'
+import profileRoutes from './routes/profile.js'
 // import discoverRoutes from './routes/discover.js'
 // import connectionRoutes from './routes/connections.js'
 
@@ -15,7 +15,7 @@ app.use(express.static('public'));
 
 // ROUTES
 app.use('/api/auth', authRoutes)
-// app.use('/api/profile', profileRoutes)
+app.use('/api/profile', profileRoutes)
 // app.use('/api/discover', discoverRoutes)
 // app.use('/api/connections', connectionRoutes)
 

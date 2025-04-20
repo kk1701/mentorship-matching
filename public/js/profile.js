@@ -1,149 +1,238 @@
-document.addEventListener('DOMContentLoaded', () => {
-    if (!currentUser) {
-        window.location.href = 'index.html';
+// DOM Elements
+const profileForm = document.getElementById('profileForm');
+const mentorSkillsContainer = document.getElementById('mentorSkills');
+const menteeInterestsContainer = document.getElementById('menteeInterests');
+const newMentorSkillInput = document.getElementById('newMentorSkill');
+const addMentorSkillBtn = document.getElementById('addMentorSkill');
+const newMenteeInterestInput = document.getElementById('newMenteeInterest');
+const addMenteeInterestBtn = document.getElementById('addMenteeInterest');
+const profileSuccess = document.getElementById('profileSuccess');
+
+// Current user data
+let userProfile = null;
+
+// Initialize profile module - NO REDIRECTS TO DASHBOARD
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!profileForm) return;
+
+    // Only check authentication
+    if (!isAuthenticated()) {
+        window.location.href = '/index.html';
         return;
     }
-    
-    // Load profile data if on profile page
-    if (window.location.pathname.includes('profile.html')) {
-        loadProfileData();
+
+    try {
+        await loadProfileData();
         setupSkillHandlers();
+        profileForm.addEventListener('submit', handleProfileSubmit);
+    } catch (err) {
+        console.error('Profile initialization error:', err);
+        showError('Failed to load profile data. Please try again.');
+        // NO REDIRECT ON ERROR
     }
 });
 
-function loadProfileData() {
-    const user = usersDB.find(u => u.id === currentUser.id);
-    
-    if (user) {
-        document.getElementById('profileName').value = user.name || '';
-        document.getElementById('profileRole').value = user.role || 'mentor';
-        document.getElementById('profileTitle').value = user.title || '';
-        document.getElementById('profileBio').value = user.bio || '';
-        
-        // Skills & Interests
-        renderSkills(user.skills || [], 'mentorSkills');
-        renderSkills(user.interests || [], 'menteeInterests');
-        
-        // Availability
-        if (user.availability) {
-            user.availability.forEach(avail => {
-                const checkbox = document.querySelector(`input[name="availability"][value="${avail}"]`);
-                if (checkbox) checkbox.checked = true;
-            });
-        }
-        
-        if (user.meetingFrequency) {
-            document.getElementById('meetingFrequency').value = user.meetingFrequency;
-        }
+async function loadProfileData() {
+    const userId = getCurrentUserId();
+    console.log(userId);
+    if (!userId) {
+        window.location.href = '/index.html'; // Only redirect to login if not auth
+        return;
     }
-    
-    // Profile form submission
-    const profileForm = document.getElementById('profileForm');
-    if (profileForm) {
-        profileForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            saveProfile();
-        });
+
+    try {
+        userProfile = await makeAuthenticatedRequest(`/api/profile/${userId}`);
+        renderProfileForm();
+        
+    } catch (err) {
+        if (err.message.includes('401')) {
+            window.location.href = '/index.html'; // Only redirect on auth errors
+        } else {
+            console.error('Failed to load profile:', err);
+            showError('Failed to load profile data. Please try again.');
+        }
     }
 }
 
-function renderSkills(skills, containerId) {
-    const container = document.getElementById(containerId);
+// Render profile form with loaded data
+function renderProfileForm() {
+    if (!userProfile) return;
+
+    // Basic Info
+    document.getElementById('profileName').value = userProfile.name || '';
+    document.getElementById('profileRole').value = userProfile.role || 'mentor';
+    document.getElementById('profileTitle').value = userProfile.title || '';
+    document.getElementById('profileBio').value = userProfile.bio || '';
+    document.getElementById('meetingFrequency').value = userProfile.meeting_frequency || 'weekly';
+
+    // Skills & Interests
+    renderSkills(userProfile.skills || [], mentorSkillsContainer);
+    renderSkills(userProfile.interests || [], menteeInterestsContainer);
+
+    // Availability
+    const availabilityCheckboxes = document.querySelectorAll('input[name="availability"]');
+    availabilityCheckboxes.forEach(checkbox => {
+        checkbox.checked = userProfile.availability?.includes(checkbox.value) || false;
+    });
+}
+
+// Render skills/interests as tags
+function renderSkills(items, container) {
     container.innerHTML = '';
     
-    skills.forEach(skill => {
-        const skillElement = document.createElement('div');
-        skillElement.className = 'tag';
-        skillElement.innerHTML = `
-            ${skill}
-            <span class="tag-remove" data-skill="${skill}">&times;</span>
+    items.forEach(item => {
+        const itemName = item.skill_name || item.interest_name || item;
+        const itemElement = document.createElement('div');
+        itemElement.className = 'tag';
+        itemElement.innerHTML = `
+            ${itemName}
+            <span class="tag-remove" data-item="${itemName}">&times;</span>
         `;
-        container.appendChild(skillElement);
+        container.appendChild(itemElement);
     });
     
     // Add remove event listeners
     container.querySelectorAll('.tag-remove').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const skillToRemove = e.target.getAttribute('data-skill');
-            removeSkill(skillToRemove, containerId);
+            const itemToRemove = e.target.getAttribute('data-item');
+            removeItem(itemToRemove, container === mentorSkillsContainer ? 'skills' : 'interests');
         });
     });
 }
 
+// Setup skill/interest handlers
 function setupSkillHandlers() {
     // Mentor skills
-    document.getElementById('addMentorSkill')?.addEventListener('click', () => {
-        const newSkill = document.getElementById('newMentorSkill').value.trim();
+    addMentorSkillBtn?.addEventListener('click', () => {
+        const newSkill = newMentorSkillInput.value.trim();
         if (newSkill) {
-            addSkill(newSkill, 'mentorSkills');
-            document.getElementById('newMentorSkill').value = '';
+            addItem(newSkill, 'skills');
+            newMentorSkillInput.value = '';
         }
     });
-    
+
     // Mentee interests
-    document.getElementById('addMenteeInterest')?.addEventListener('click', () => {
-        const newInterest = document.getElementById('newMenteeInterest').value.trim();
+    addMenteeInterestBtn?.addEventListener('click', () => {
+        const newInterest = newMenteeInterestInput.value.trim();
         if (newInterest) {
-            addSkill(newInterest, 'menteeInterests');
-            document.getElementById('newMenteeInterest').value = '';
+            addItem(newInterest, 'interests');
+            newMenteeInterestInput.value = '';
+        }
+    });
+
+    // Allow Enter key to add items
+    newMentorSkillInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addMentorSkillBtn.click();
+        }
+    });
+
+    newMenteeInterestInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addMenteeInterestBtn.click();
         }
     });
 }
 
-function addSkill(skill, containerId) {
-    const user = usersDB.find(u => u.id === currentUser.id);
-    if (!user) return;
-    
-    const skillArray = containerId === 'mentorSkills' ? user.skills : user.interests;
-    
-    if (!skillArray.includes(skill)) {
-        skillArray.push(skill);
-        localStorage.setItem('mentorshipUsers', JSON.stringify(usersDB));
-        renderSkills(skillArray, containerId);
+// Add new skill/interest
+async function addItem(item, type) {
+    if (!userProfile) return;
+
+    try {
+        // Update local state immediately for responsive UI
+        if (type === 'skills') {
+            if (!userProfile.skills.some(s => s.skill_name === item)) {
+                userProfile.skills.push({ skill_name: item, skill_level: 'intermediate' });
+                renderSkills(userProfile.skills, mentorSkillsContainer);
+            }
+        } else {
+            if (!userProfile.interests.some(i => i.interest_name === item)) {
+                userProfile.interests.push({ interest_name: item, proficiency_level: 'beginner' });
+                renderSkills(userProfile.interests, menteeInterestsContainer);
+            }
+        }
+    } catch (err) {
+        console.error(`Failed to add ${type}:`, err);
+        showError(`Failed to add ${item}. Please try again.`);
     }
 }
 
-function removeSkill(skill, containerId) {
-    const user = usersDB.find(u => u.id === currentUser.id);
-    if (!user) return;
-    
-    const skillArray = containerId === 'mentorSkills' ? user.skills : user.interests;
-    const index = skillArray.indexOf(skill);
-    
-    if (index !== -1) {
-        skillArray.splice(index, 1);
-        localStorage.setItem('mentorshipUsers', JSON.stringify(usersDB));
-        renderSkills(skillArray, containerId);
+// Remove skill/interest
+async function removeItem(item, type) {
+    if (!userProfile) return;
+
+    try {
+        // Update local state immediately for responsive UI
+        if (type === 'skills') {
+            userProfile.skills = userProfile.skills.filter(s => s.skill_name !== item);
+            renderSkills(userProfile.skills, mentorSkillsContainer);
+        } else {
+            userProfile.interests = userProfile.interests.filter(i => i.interest_name !== item);
+            renderSkills(userProfile.interests, menteeInterestsContainer);
+        }
+    } catch (err) {
+        console.error(`Failed to remove ${type}:`, err);
+        showError(`Failed to remove ${item}. Please try again.`);
     }
 }
 
-function saveProfile() {
-    const userIndex = usersDB.findIndex(u => u.id === currentUser.id);
-    if (userIndex === -1) return;
+// Handle profile form submission
+async function handleProfileSubmit(e) {
+    e.preventDefault();
     
-    const user = usersDB[userIndex];
-    
-    user.name = document.getElementById('profileName').value;
-    user.role = document.getElementById('profileRole').value;
-    user.title = document.getElementById('profileTitle').value;
-    user.bio = document.getElementById('profileBio').value;
-    
-    const availabilityCheckboxes = document.querySelectorAll('input[name="availability"]:checked');
-    user.availability = Array.from(availabilityCheckboxes).map(cb => cb.value);
-    
-    user.meetingFrequency = document.getElementById('meetingFrequency').value;
-    
-    user.profileComplete = true;
-    
-    // Update in DB
-    usersDB[userIndex] = user;
-    localStorage.setItem('mentorshipUsers', JSON.stringify(usersDB));
-    currentUser = user;
-    sessionStorage.setItem('currentUser', JSON.stringify(user));
-    
-    // Show success message
-    document.getElementById('profileSuccess').textContent = 'Profile saved successfully!';
+    if (!userProfile) return;
+
+    try {
+        const userId = getCurrentUserId();
+        const formData = {
+            name: document.getElementById('profileName').value,
+            title: document.getElementById('profileTitle').value,
+            bio: document.getElementById('profileBio').value,
+            role: document.getElementById('profileRole').value,
+            meeting_frequency: document.getElementById('meetingFrequency').value,
+            skills: userProfile.skills,
+            interests: userProfile.interests,
+            availability: Array.from(document.querySelectorAll('input[name="availability"]:checked')).map(cb => cb.value)
+        };
+
+        // Send to server
+        await makeAuthenticatedRequest(`/api/profile/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        // Show success message
+        showSuccess('Profile saved successfully!');
+        
+        // Update local profile data
+        await loadProfileData();
+    } catch (err) {
+        console.error('Failed to save profile:', err);
+        showError(err.message || 'Failed to save profile. Please try again.');
+    }
+}
+
+// Helper function to show success message
+function showSuccess(message) {
+    profileSuccess.textContent = message;
+    profileSuccess.style.display = 'block';
+    profileSuccess.className = 'success-message';
     setTimeout(() => {
-        document.getElementById('profileSuccess').textContent = '';
+        profileSuccess.style.display = 'none';
+    }, 3000);
+}
+
+// Helper function to show error message
+function showError(message) {
+    profileSuccess.textContent = message;
+    profileSuccess.style.display = 'block';
+    profileSuccess.className = 'error-message';
+    setTimeout(() => {
+        profileSuccess.style.display = 'none';
     }, 3000);
 }
