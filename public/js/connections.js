@@ -190,4 +190,111 @@ function acceptConnectionRequest(requestId) {
     loadConnections();
 }
 
-// Similar implementations for declineConnectionRequest, cancelConnectionRequest, and disconnectUser
+function declineConnectionRequest(requestId) {
+    const currentUserIndex = usersDB.findIndex(u => u.id === currentUser.id);
+    if (currentUserIndex === -1) return;
+
+    // Find the request in current user's receivedRequests
+    const requestIndex = usersDB[currentUserIndex].receivedRequests.findIndex(
+        req => req.requestId === requestId
+    );
+    
+    if (requestIndex === -1) return;
+
+    const request = usersDB[currentUserIndex].receivedRequests[requestIndex];
+    const senderUserIndex = usersDB.findIndex(u => u.id === request.userId);
+    if (senderUserIndex === -1) return;
+
+    // Find the corresponding sent request in sender's sentRequests
+    const sentRequestIndex = usersDB[senderUserIndex].sentRequests.findIndex(
+        req => req.requestId === requestId
+    );
+
+    if (sentRequestIndex === -1) return;
+
+    // Remove from both users' request lists
+    usersDB[currentUserIndex].receivedRequests.splice(requestIndex, 1);
+    usersDB[senderUserIndex].sentRequests.splice(sentRequestIndex, 1);
+
+    // Update database
+    localStorage.setItem('mentorshipUsers', JSON.stringify(usersDB));
+    
+    // Update current user in session
+    currentUser = usersDB[currentUserIndex];
+    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+    // Reload connections
+    loadConnections();
+}
+
+function cancelConnectionRequest(requestId) {
+    const currentUserIndex = usersDB.findIndex(u => u.id === currentUser.id);
+    if (currentUserIndex === -1) return;
+
+    // Find the request in current user's sentRequests
+    const sentRequestIndex = usersDB[currentUserIndex].sentRequests.findIndex(
+        req => req.requestId === requestId
+    );
+    
+    if (sentRequestIndex === -1) return;
+
+    const request = usersDB[currentUserIndex].sentRequests[sentRequestIndex];
+    const receiverUserIndex = usersDB.findIndex(u => u.id === request.userId);
+    if (receiverUserIndex === -1) return;
+
+    // Find the corresponding received request in receiver's receivedRequests
+    const receivedRequestIndex = usersDB[receiverUserIndex].receivedRequests.findIndex(
+        req => req.requestId === requestId
+    );
+
+    if (receivedRequestIndex === -1) return;
+
+    // Remove from both users' request lists
+    usersDB[currentUserIndex].sentRequests.splice(sentRequestIndex, 1);
+    usersDB[receiverUserIndex].receivedRequests.splice(receivedRequestIndex, 1);
+
+    // Update database
+    localStorage.setItem('mentorshipUsers', JSON.stringify(usersDB));
+    
+    // Update current user in session
+    currentUser = usersDB[currentUserIndex];
+    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+    // Reload connections
+    loadConnections();
+}
+
+function disconnectUser(targetUserId) {
+    const currentUserIndex = usersDB.findIndex(u => u.id === currentUser.id);
+    const targetUserIndex = usersDB.findIndex(u => u.id === targetUserId);
+    
+    if (currentUserIndex === -1 || targetUserIndex === -1) return;
+
+    // Remove connection from current user's connections
+    const currentUserConnIndex = usersDB[currentUserIndex].connections.findIndex(
+        conn => conn.userId === targetUserId
+    );
+    
+    if (currentUserConnIndex !== -1) {
+        usersDB[currentUserIndex].connections.splice(currentUserConnIndex, 1);
+    }
+
+    // Remove connection from target user's connections
+    const targetUserConnIndex = usersDB[targetUserIndex].connections.findIndex(
+        conn => conn.userId === currentUser.id
+    );
+    
+    if (targetUserConnIndex !== -1) {
+        usersDB[targetUserIndex].connections.splice(targetUserConnIndex, 1);
+    }
+
+    // Update database
+    localStorage.setItem('mentorshipUsers', JSON.stringify(usersDB));
+    
+    // Update current user in session
+    currentUser = usersDB[currentUserIndex];
+    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+    // Reload connections
+    loadConnections();
+}
