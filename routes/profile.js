@@ -6,7 +6,7 @@ import authenticate from '../middlewares/authenticate.js'
 const router = express.Router();
 
 // Get profile
-router.get('/:userId', async (req, res) => {
+router.get('/:userId', authenticate, async (req, res) => {
   try {
     const [users] = await db.query('SELECT * FROM users WHERE user_id = ?', [req.params.userId]);
     if (!users.length) {
@@ -32,7 +32,7 @@ router.get('/:userId', async (req, res) => {
 });
 
 // Update profile
-router.put('/:userId', async (req, res) => {
+router.put('/:userId', authenticate, async (req, res) => {
   try {
     const { name, title, bio, role, skills, interests, availability } = req.body;
 

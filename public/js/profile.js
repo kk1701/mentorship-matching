@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadProfileData() {
     const userId = getCurrentUserId();
-    console.log(userId);
     if (!userId) {
         window.location.href = '/index.html'; // Only redirect to login if not auth
         return;
