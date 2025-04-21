@@ -23,13 +23,12 @@ async function testConnection() {
       setInterval(async () => {
         const [rows] = await pool.query('SELECT 1');
         console.log('Database heartbeat - connection active');
-      }, 3600000); // Every hour
+      }, 3600000);
     } catch (err) {
       console.error('Failed to connect to the MySQL database:', err.message);
-      process.exit(1); // Exit if we can't connect
+      process.exit(1);
     }
 }
-
 testConnection();
 
 export default pool

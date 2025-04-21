@@ -1,4 +1,3 @@
-// DOM Elements
 const profileForm = document.getElementById('profileForm');
 const mentorSkillsContainer = document.getElementById('mentorSkills');
 const menteeInterestsContainer = document.getElementById('menteeInterests');

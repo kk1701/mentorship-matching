@@ -1,5 +1,3 @@
-// import { makeAuthenticatedRequest, getCurrentUserId, isAuthenticated } from './auth.js';
-
 document.addEventListener('DOMContentLoaded', async () => {
     if (!isAuthenticated()) {
         window.location.href = '/index.html';
